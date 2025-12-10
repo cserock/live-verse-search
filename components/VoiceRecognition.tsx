@@ -6,6 +6,7 @@ interface SpeechRecognition extends EventTarget {
   continuous: boolean;
   interimResults: boolean;
   lang: string;
+  maxAlternatives: number;
   start(): void;
   stop(): void;
   abort(): void;
@@ -57,6 +58,7 @@ export default function VoiceRecognition({ onTranscript, onSearch }: VoiceRecogn
       recognition.continuous = true;
       recognition.interimResults = true;
       recognition.lang = 'ko-KR';
+      recognition.maxAlternatives = 3;
 
       recognition.onresult = (event: SpeechRecognitionEvent) => {
         let interimTranscript = '';
