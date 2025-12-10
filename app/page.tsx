@@ -163,6 +163,20 @@ export default function Home() {
             onTogglePresentation={() => setPresentationMode(!presentationMode)}
           />
         </main>
+        
+        <footer className="container mx-auto px-4 py-4 max-w-4xl text-center">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            © 2025{' '}
+            <a
+              href="https://hyperpipe.kr"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-grey-600 dark:text-grey-400 hover:underline"
+            >
+              HyperPipe
+            </a>
+          </p>
+        </footer>
       </div>
 
       {/* 드래그 가능한 구분선 */}
