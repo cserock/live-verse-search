@@ -26,9 +26,9 @@ export default function Home() {
     if (!query.trim()) return;
 
     // 성경 제목이 포함되어 있지 않으면 검색하지 않음
-    if (!containsBibleTitle(query)) {
-      return;
-    }
+    // if (!containsBibleTitle(query)) {
+    //   return;
+    // }
 
     setIsLoading(true);
     setCurrentQuery(query);

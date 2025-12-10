@@ -206,3 +206,164 @@ export function formatBibleVersesText(
   return titleText + versesText;
 }
 
+/**
+ * OpenAI API를 사용하여 자연어 쿼리에서 성경 구절 정보를 추출하는 함수
+ * @param query - 성경 구절이 포함된 자연어 문장
+ * @returns 성경 구절 정보 객체 또는 null
+ */
+export async function extractBibleReferenceWithAI(
+  query: string
+): Promise<{ book: number; chapter: number; start_verse: number; end_verse: number } | null> {
+  if (!query || query.trim() === '') {
+    return null;
+  }
+
+  // OpenAI API 키 확인
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    console.error('OPENAI_API_KEY 환경 변수가 설정되지 않았습니다.');
+    return null;
+  }
+
+  // LangSmith 연동 설정 (LangChain을 통한 자동 추적)
+  if (process.env.LANGSMITH_API_KEY) {
+    // LangChain을 통한 자동 추적 활성화
+    process.env.LANGCHAIN_TRACING_V2 = 'true';
+    process.env.LANGCHAIN_API_KEY = process.env.LANGSMITH_API_KEY;
+    process.env.LANGCHAIN_PROJECT = process.env.LANGSMITH_PROJECT || 'live-verse-search';
+    process.env.LANGCHAIN_ENDPOINT = process.env.LANGSMITH_ENDPOINT || 'https://api.smith.langchain.com';
+    
+    console.log(`[LangChain/LangSmith] 추적 활성화됨 - 프로젝트: ${process.env.LANGCHAIN_PROJECT}`);
+  }
+
+  try {
+    // LangChain OpenAI 모듈 import
+    const langchainOpenAI = await import('@langchain/openai');
+    const langchainCore = await import('@langchain/core/messages');
+    
+    const ChatOpenAI = langchainOpenAI.ChatOpenAI;
+    const HumanMessage = langchainCore.HumanMessage;
+    const SystemMessage = langchainCore.SystemMessage;
+
+    // LangChain ChatOpenAI 모델 생성
+    // LangChain은 자동으로 LangSmith에 추적 데이터를 전송합니다
+    const model = new ChatOpenAI({
+      modelName: 'gpt-4.1-mini',
+      temperature: 0.1,
+      openAIApiKey: apiKey,
+      // JSON 모드 활성화
+      modelKwargs: {
+        response_format: { type: 'json_object' },
+      },
+    });
+
+    // 성경 제목 목록을 프롬프트에 포함
+    const bibleTitlesList = bibleTitles.map((title, index) => `${index + 1}. ${title}`).join(', ');
+
+    const systemPrompt = '당신은 성경 구절 참조를 추출하는 전문가입니다. 입력된 문장에서 성경 책 이름, 장, 절 정보를 정확하게 추출하여 JSON 형식으로 반환합니다.';
+    
+    const userPrompt = `다음 문장에서 성경 구절 출처를 추출하여 JSON 형식으로 반환해주세요.
+
+성경 제목 목록 (번호는 책 번호입니다):
+${bibleTitlesList}
+
+입력 문장: "${query}"
+
+다음 JSON 형식으로 응답해주세요:
+{
+  "book": 책번호 (1-66),
+  "chapter": 장번호 (숫자),
+  "start_verse": 시작절번호 (숫자),
+  "end_verse": 끝절번호 (숫자, 범위가 없으면 start_verse와 동일)
+}
+
+입력 문장에서 성경 제목에 공백이 포함되어 있을 수 있습니다. 아래와 같이 공백을 제거해서 책번호를 찾아 주세요.
+- 예: "베드로 전서" -> "베드로전서"
+- 예: "요한 계시록" -> "요한계시록"
+
+아래의 예시를 참고해서 응답해주세요.
+- 예: "베드로 전서 이장 팔절" -> {"book": 60, "chapter": 2, "start_verse": 8, "end_verse": 8}
+- 예: "베드로전서 이장 팔절" -> {"book": 60, "chapter": 2, "start_verse": 8, "end_verse": 8}
+- 예: "마태복음 이장 삼절부터 오절까지" -> {"book": 40, "chapter": 2, "start_verse": 3, "end_verse": 5}
+- 예: "마태복음 이십이장 3절부터 5절까지" -> {"book": 40, "chapter": 22, "start_verse": 3, "end_verse": 5}
+- 예: "요한 계시록 20 이장 1절에서 15절" -> {"book": 66, "chapter": 22, "start_verse": 1, "end_verse": 15}
+- 예: "요한계시록 20 이장 1절에서 15절" -> {"book": 66, "chapter": 22, "start_verse": 1, "end_verse": 15}
+- 예: "요한계시록 이십이장 1절에서 15절" -> {"book": 66, "chapter": 22, "start_verse": 1, "end_verse": 15}
+
+만약 성경 구절을 찾을 수 없다면 null을 반환해주세요.
+JSON만 반환하고 다른 설명은 포함하지 마세요.`;
+
+    // LangChain을 사용하여 메시지 생성 및 호출
+    // LangChain은 자동으로 LangSmith에 추적 데이터를 전송합니다
+    const messages = [
+      new SystemMessage(systemPrompt),
+      new HumanMessage(userPrompt),
+    ];
+
+    const startTime = Date.now();
+    const response = await model.invoke(messages);
+    const endTime = Date.now();
+    const duration = endTime - startTime;
+
+    console.log(`[LangChain] API 호출 완료 - 실행 시간: ${duration}ms`);
+
+    const content = response.content;
+    if (!content || typeof content !== 'string') {
+      return null;
+    }
+
+    // JSON 파싱
+    const parsed = JSON.parse(content);
+
+    // null 체크
+    if (parsed === null || parsed.book === null || parsed.chapter === null || parsed.start_verse === null || parsed.end_verse === null) {
+      return null;
+    }
+
+    // 유효성 검사
+    const book = parseInt(parsed.book, 10);
+    const chapter = parseInt(parsed.chapter, 10);
+    const startVerse = parseInt(parsed.start_verse, 10);
+    const endVerse = parseInt(parsed.end_verse, 10);
+
+    if (
+      isNaN(book) ||
+      isNaN(chapter) ||
+      isNaN(startVerse) ||
+      isNaN(endVerse) ||
+      book < 1 ||
+      book > 66 ||
+      chapter < 1 ||
+      startVerse < 1 ||
+      endVerse < 1 ||
+      startVerse > endVerse
+    ) {
+      return null;
+    }
+
+    return {
+      book,
+      chapter,
+      start_verse: startVerse,
+      end_verse: endVerse,
+    };
+  } catch (error) {
+    console.error('OpenAI API 오류:', error);
+    
+    // LangSmith에 에러 추적 (선택사항)
+    if (process.env.LANGSMITH_API_KEY && error instanceof Error) {
+      try {
+        // LangSmith SDK가 설치되어 있다면 에러를 추적할 수 있습니다
+        // 현재는 환경 변수를 통한 자동 추적이 활성화되어 있으므로
+        // 에러는 자동으로 LangSmith에 기록됩니다
+        console.log('LangSmith 추적 활성화됨 - 에러가 자동으로 기록됩니다.');
+      } catch (langsmithError) {
+        // LangSmith 추적 실패는 무시
+        console.warn('LangSmith 추적 중 오류:', langsmithError);
+      }
+    }
+    
+    return null;
+  }
+}
+

@@ -19,8 +19,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "성경 구절 찾기 - 음성 검색",
-  description: "음성 인식을 통해 성경 구절을 검색하는 서비스",
+  title: "실시간 성경 구절 찾기 - 음성 검색",
+  description: "실시간 한국어 음성에서 성경 구절의 출처(예. 요한복음 3장 16절)를 인식하고, 개역한글 성경에서 해당 구절을 찾아 보여줍니다.",
   // 크롬 음성 인식 성능 향상
   other: {
     'speech-synthesis-voices': 'ko-KR'

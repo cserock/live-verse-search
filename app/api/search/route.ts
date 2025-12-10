@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { containsBibleTitle, extractBibleReference, formatBibleVersesText } from '@/lib/bibleUtils';
+import { containsBibleTitle, extractBibleReference, extractBibleReferenceWithAI, formatBibleVersesText } from '@/lib/bibleUtils';
 import { searchBibleVersesFromDB } from '@/lib/database';
 
 export async function GET(request: NextRequest) {
@@ -25,18 +25,25 @@ export async function GET(request: NextRequest) {
       // 정확한 제목 매칭
       reference = extractBibleReference(lowerQuery);
 
-      
-      
-      if (reference) {
-        // SQLite 데이터베이스에서 성경 구절 검색
-        const dbRows = searchBibleVersesFromDB(reference);
-
-        const formattedText = formatBibleVersesText(dbRows, reference);
-        
-        // 텍스트만 추출하여 results에 추가
-        // const verseTexts = dbRows.map(row => row.text);
-        results.push(formattedText);
+      // extractBibleReference가 null이면 OpenAI API를 사용하여 추출 시도
+      if (!reference) {
+        reference = await extractBibleReferenceWithAI(lowerQuery);
       }
+      
+    } else {
+      // OpenAI API를 사용하여 추출 시도
+      reference = await extractBibleReferenceWithAI(lowerQuery);
+    }
+
+    if (reference) {
+      // SQLite 데이터베이스에서 성경 구절 검색
+      const dbRows = searchBibleVersesFromDB(reference);
+
+      const formattedText = formatBibleVersesText(dbRows, reference);
+      
+      // 텍스트만 추출하여 results에 추가
+      // const verseTexts = dbRows.map(row => row.text);
+      results.push(formattedText);
     }
   } catch (error) {
     console.error('검색 오류:', error);
