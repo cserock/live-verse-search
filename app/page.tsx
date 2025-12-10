@@ -120,7 +120,7 @@ export default function Home() {
                 Live Verse Search
               </h1>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-              실시간 한국어 음성에서 성경 구절의 출처(예. 요한복음 3장 16절)를 인식하고, 개역한글 성경에서 해당 구절을 찾아 보여줍니다.
+              실시간 한국어 음성에서 성경 구절의 출처(예시-요한복음 3장 16절)를 인식하고, 개역한글 성경에서 해당 구절을 찾아 보여줍니다.
               </p>
             </div>
           </main>
