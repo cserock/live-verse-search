@@ -26,13 +26,13 @@ export async function GET(request: NextRequest) {
       reference = extractBibleReference(lowerQuery);
 
       // extractBibleReference가 null이면 OpenAI API를 사용하여 추출 시도
-      if (!reference) {
-        reference = await extractBibleReferenceWithAI(lowerQuery);
-      }
+      // if (!reference) {
+      //   reference = await extractBibleReferenceWithAI(lowerQuery);
+      // }
       
     } else {
       // OpenAI API를 사용하여 추출 시도
-      reference = await extractBibleReferenceWithAI(lowerQuery);
+      // reference = await extractBibleReferenceWithAI(lowerQuery);
     }
 
     if (reference) {
