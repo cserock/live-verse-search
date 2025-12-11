@@ -61,9 +61,9 @@ export function extractBibleReference(query: string): { book: number; chapter: n
   const bookPattern = sortedTitles.map(title => title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
   
   // 패턴 1: "책이름 장 장번호 절 절번호부터 절번호절" 형식 (범위 절) - 가장 구체적이므로 먼저 확인
-  // 예: "마태복음 2장 3절부터 5절까지", "마태복음 2장 3절부터 5절"
+  // 예: "마태복음 2장 3절부터 5절까지", "마태복음 2장 3절부터 5절", "시편 1편 2절에서 5절"
   const rangeVersePattern = new RegExp(
-    `(${bookPattern})\\s*(\\d+)장\\s*(\\d+)절\\s*(?:부터|~|-|에서)\\s*(\\d+)절`,
+    `(${bookPattern})\\s*(\\d+)(장|편)\\s*(\\d+)절\\s*(?:부터|~|-|에서)\\s*(\\d+)절`,
     'i'
   );
 
@@ -75,9 +75,9 @@ export function extractBibleReference(query: string): { book: number; chapter: n
   );
 
   // 패턴 3: "책이름 장 장번호 절 절번호" 형식 (단일 절)
-  // 예: "창세기 1장 1절", "요한계시록 3장 8절"
+  // 예: "창세기 1장 1절", "요한계시록 3장 8절", "시편 2편 3절"
   const singleVersePattern = new RegExp(
-    `(${bookPattern})\\s*(\\d+)장\\s*(\\d+)절`,
+    `(${bookPattern})\\s*(\\d+)(장|편)\\s*(\\d+)절`,
     'i'
   );
 
@@ -100,8 +100,8 @@ export function extractBibleReference(query: string): { book: number; chapter: n
   if (match) {
     const bookIndex = getBookIndex(match[1]);
     const chapter = parseInt(match[2], 10);
-    const startVerse = parseInt(match[3], 10);
-    const endVerse = parseInt(match[4], 10);
+    const startVerse = parseInt(match[4], 10);
+    const endVerse = parseInt(match[5], 10);
     
     if (bookIndex !== null && !isNaN(chapter) && !isNaN(startVerse) && !isNaN(endVerse)) {
       return {
@@ -136,7 +136,7 @@ export function extractBibleReference(query: string): { book: number; chapter: n
   if (match) {
     const bookIndex = getBookIndex(match[1]);
     const chapter = parseInt(match[2], 10);
-    const verse = parseInt(match[3], 10);
+    const verse = parseInt(match[4], 10);
     
     if (bookIndex !== null && !isNaN(chapter) && !isNaN(verse)) {
       return {
@@ -186,10 +186,11 @@ export function formatBibleVersesText(
   let titleText = '';
   if (reference) {
     const bookName = bibleTitles[reference.book - 1] || `${reference.book}`;
+    const chapterUnit = reference.book === 19 ? '편' : '장'; // 시편(19)은 '편', 나머지는 '장'
     if (reference.start_verse === reference.end_verse) {
-      titleText = `${bookName} ${reference.chapter}장 ${reference.start_verse}절\n\n`;
+      titleText = `${bookName} ${reference.chapter}${chapterUnit} ${reference.start_verse}절\n\n`;
     } else {
-      titleText = `${bookName} ${reference.chapter}장 ${reference.start_verse}~${reference.end_verse}절\n\n`;
+      titleText = `${bookName} ${reference.chapter}${chapterUnit} ${reference.start_verse}~${reference.end_verse}절\n\n`;
     }
   }
 
@@ -366,4 +367,3 @@ JSON만 반환하고 다른 설명은 포함하지 마세요.`;
     return null;
   }
 }
-
