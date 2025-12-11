@@ -129,7 +129,7 @@ export default function Home() {
           <p className="text-sm text-gray-600 dark:text-gray-400">
             © 2025{' '}
             <a
-              href="https://hyperpipe.kr"
+              href="https://hyperpipe.kr?utm_source=live-verse-search&utm_medium=website"
               target="_blank"
               rel="noopener noreferrer"
               className="text-grey-600 dark:text-grey-400 hover:underline"
@@ -182,7 +182,7 @@ export default function Home() {
           <p className="text-sm text-gray-600 dark:text-gray-400">
             © 2025{' '}
             <a
-              href="https://hyperpipe.kr"
+              href="https://hyperpipe.kr?utm_source=live-verse-search&utm_medium=website"
               target="_blank"
               rel="noopener noreferrer"
               className="text-grey-600 dark:text-grey-400 hover:underline"
